@@ -411,11 +411,6 @@
 
 </style>
 
-  <!-- Google Identity & Sheets API -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://apis.google.com/js/api.js" async defer></script>
-  <meta name="google-signin-client_id" content="250556811452-71rtq5bqc0qu943acdabqnifohee5dif.apps.googleusercontent.com">
-
 </head>
 <body>
 
@@ -1264,16 +1259,8 @@ function renderPP() {
 }
 
 
-// ===== GOOGLE SHEETS INTEGRATION =====
-const CLIENT_ID = '250556811452-71rtq5bqc0qu943acdabqnifohee5dif.apps.googleusercontent.com';
-const SHEET_ID  = '1-vgLjK43GT-TUtRhSv9oKs0My3KKCtwR7v_KRpNCjH4';
-const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
-const SHEETS    = ['Gastos','Fijos','PorPagar','Ingresos'];
-
-let tokenClient = null;
-let gapiReady = false;
-let gsiReady  = false;
-let accessToken = null;
+// ===== GOOGLE APPS SCRIPT INTEGRATION =====
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyd7iaIpKd1daYsTXWpPcKJj2RQbTEV1s0FmUjtPE6aqke6Klp7lSTrqFx0wLs71iGM/exec';
 
 function setSyncStatus(state, msg) {
   const dot = document.getElementById('syncDot');
@@ -1282,181 +1269,127 @@ function setSyncStatus(state, msg) {
   if (!dot) return;
   dot.className = 'sync-dot ' + state;
   status.textContent = msg;
-  if (state === 'synced') btn.textContent = 'Sincronizar';
-  else if (state === 'syncing') btn.textContent = '...';
-  else btn.textContent = 'Conectar';
+  btn.textContent = state === 'syncing' ? '...' : 'Sincronizar';
 }
 
-// Load GAPI
-function gapiLoaded() {
-  gapi.load('client', async () => {
-    await gapi.client.init({ apiKey: '', discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
-    gapiReady = true;
-    maybeInit();
-  });
-}
-
-// Load GSI
-function gsiLoaded() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    callback: async (resp) => {
-      if (resp.error) { setSyncStatus('error', 'Error de autenticación'); return; }
-      accessToken = resp.access_token;
-      localStorage.setItem('gtoken', accessToken);
-      setSyncStatus('syncing', 'Preparando hojas...');
-      await ensureSheets();
-      await pullFromSheets();
-      setSyncStatus('synced', 'Conectado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}));
-      document.getElementById('syncBtn').textContent = 'Sincronizar';
-    }
-  });
-  gsiReady = true;
-  maybeInit();
-}
-
-function maybeInit() {
-  if (!gapiReady || !gsiReady) return;
-  const saved = localStorage.getItem('gtoken');
-  if (saved) {
-    accessToken = saved;
-    gapi.client.setToken({ access_token: saved });
-    setSyncStatus('synced', 'Conectado');
-    document.getElementById('syncBtn').textContent = 'Sincronizar';
-  }
-}
-
-function handleAuthClick() {
-  if (accessToken) {
-    setSyncStatus('syncing', 'Sincronizando...');
-    pushToSheets().then(() => {
-      setSyncStatus('synced', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}));
-    }).catch(() => setSyncStatus('error', 'Error al sincronizar'));
-    return;
-  }
-  if (!tokenClient) { setSyncStatus('error', 'Google no cargó aún'); return; }
-  tokenClient.requestAccessToken({ prompt: 'consent', hint: 'richardmestra9831@gmail.com' });
-}
-
-// Ensure all sheets exist
-async function ensureSheets() {
+async function handleAuthClick() {
+  setSyncStatus('syncing', 'Sincronizando...');
   try {
-    gapi.client.setToken({ access_token: accessToken });
-    const res = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-    const existing = res.result.sheets.map(s => s.properties.title);
-    const toCreate = SHEETS.filter(s => !existing.includes(s));
-    if (toCreate.length === 0) return;
-    await gapi.client.sheets.spreadsheets.batchUpdate({
-      spreadsheetId: SHEET_ID,
-      resource: { requests: toCreate.map(title => ({ addSheet: { properties: { title } } })) }
-    });
-    // Add headers
-    const headers = {
-      Gastos:    [['ID','Nombre','Valor','Tipo','Categoria','Quien','Quincena','Fecha']],
-      Fijos:     [['ID','Nombre','Valor','Categoria','Quincena','Quien']],
-      PorPagar:  [['ID','Nombre','Valor','Categoria','Quien','FechaLimite','SplitRichard','SplitEsposa','Pagado','FechaPago']],
-      Ingresos:  [['Mes','Richard','Esposa']]
-    };
-    for (const sh of toCreate) {
-      await gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID, range: sh + '!A1',
-        valueInputOption: 'RAW',
-        resource: { values: headers[sh] }
-      });
-    }
-  } catch(e) { console.error('ensureSheets', e); }
+    await pushToSheets();
+    setSyncStatus('synced', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
+    showToast('✅ Datos guardados en Google Sheets');
+  } catch(e) {
+    setSyncStatus('error', 'Error al sincronizar');
+    showToast('⚠️ Error: ' + e.message);
+  }
 }
 
-// Push all local data to Sheets
+async function appsScriptGet(sheet) {
+  const url = APPS_SCRIPT_URL + '?sheet=' + encodeURIComponent(sheet);
+  const res = await fetch(url, { redirect: 'follow' });
+  const text = await res.text();
+  try { return JSON.parse(text); } catch(e) { return { ok: false }; }
+}
+
+async function appsScriptPost(sheet, rows) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ sheet, action: 'write', rows }),
+    headers: { 'Content-Type': 'text/plain' }
+  });
+  const text = await res.text();
+  try { return JSON.parse(text); } catch(e) { return { ok: false }; }
+}
+
 async function pushToSheets() {
-  gapi.client.setToken({ access_token: accessToken });
   const m = getMonth();
   const gastos = m.gastos || [];
   const fijos = loadFijos();
   const pp = loadPP();
   const ingresos = m.ingresos || { richard: 4000000, esposa: 2900000 };
 
-  const gastosRows = gastos.map(g => [g.id, g.nombre, g.valor, g.tipo, g.cat, g.quien, g.quincena, g.fecha]);
-  const fijosRows  = fijos.map(f => [f.id, f.nombre, f.valor, f.cat, f.quincena, f.quien]);
-  const ppRows     = pp.map(p => [p.id, p.nombre, p.valor||'', p.cat, p.quien, p.fechaLimite||'', p.splitRichard||'', p.splitEsposa||'', p.pagado?'SI':'NO', p.fechaPago||'']);
-  const ingRow     = [[currentMonthKey, ingresos.richard, ingresos.esposa]];
+  const gastosRows = [['ID','Nombre','Valor','Tipo','Categoria','Quien','Quincena','Fecha'],
+    ...gastos.map(g => [g.id, g.nombre, g.valor, g.tipo, g.cat, g.quien, g.quincena, g.fecha])];
 
-  const writes = [
-    { range: 'Gastos!A2', values: gastosRows.length ? gastosRows : [['']] },
-    { range: 'Fijos!A2',  values: fijosRows.length  ? fijosRows  : [['']] },
-    { range: 'PorPagar!A2', values: ppRows.length   ? ppRows     : [['']] },
-    { range: 'Ingresos!A2', values: ingRow }
-  ];
+  const fijosRows = [['ID','Nombre','Valor','Categoria','Quincena','Quien'],
+    ...fijos.map(f => [f.id, f.nombre, f.valor, f.cat, f.quincena, f.quien])];
 
-  // Clear first then write
-  for (const w of writes) {
-    await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: w.range.split('!')[0] + '!A2:Z' });
-  }
-  await gapi.client.sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId: SHEET_ID,
-    resource: { valueInputOption: 'RAW', data: writes }
-  });
+  const ppRows = [['ID','Nombre','Valor','Categoria','Quien','FechaLimite','SplitRichard','SplitEsposa','Pagado','FechaPago'],
+    ...pp.map(p => [p.id, p.nombre, p.valor||'', p.cat, p.quien, p.fechaLimite||'', p.splitRichard||'', p.splitEsposa||'', p.pagado?'SI':'NO', p.fechaPago||''])];
+
+  const ingRows = [['Mes','Richard','Esposa'],
+    [currentMonthKey, ingresos.richard, ingresos.esposa]];
+
+  await Promise.all([
+    appsScriptPost('Gastos', gastosRows),
+    appsScriptPost('Fijos', fijosRows),
+    appsScriptPost('PorPagar', ppRows),
+    appsScriptPost('Ingresos', ingRows)
+  ]);
 }
 
-// Pull data from Sheets into localStorage
 async function pullFromSheets() {
-  gapi.client.setToken({ access_token: accessToken });
+  setSyncStatus('syncing', 'Descargando datos...');
   try {
-    const res = await gapi.client.sheets.spreadsheets.values.batchGet({
-      spreadsheetId: SHEET_ID,
-      ranges: ['Gastos!A2:H', 'Fijos!A2:F', 'PorPagar!A2:J', 'Ingresos!A2:C']
-    });
-    const [gRows, fRows, pRows, iRows] = res.result.valueRanges.map(r => r.values || []);
+    const [gRes, fRes, pRes, iRes] = await Promise.all([
+      appsScriptGet('Gastos'),
+      appsScriptGet('Fijos'),
+      appsScriptGet('PorPagar'),
+      appsScriptGet('Ingresos')
+    ]);
 
-    // Gastos
     const m = getMonth();
-    if (gRows.length && gRows[0][0]) {
-      m.gastos = gRows.map(r => ({
+
+    if (gRes.ok && gRes.rows.length > 1) {
+      m.gastos = gRes.rows.slice(1).filter(r => r[0]).map(r => ({
         id: +r[0], nombre: r[1], valor: +r[2], tipo: r[3], cat: r[4], quien: r[5], quincena: r[6], fecha: r[7]
       }));
     }
-
-    // Fijos
-    if (fRows.length && fRows[0][0]) {
-      const fijos = fRows.map(r => ({ id: +r[0], nombre: r[1], valor: +r[2], cat: r[3], quincena: r[4], quien: r[5] }));
+    if (fRes.ok && fRes.rows.length > 1) {
+      const fijos = fRes.rows.slice(1).filter(r => r[0]).map(r => ({
+        id: +r[0], nombre: r[1], valor: +r[2], cat: r[3], quincena: r[4], quien: r[5]
+      }));
       localStorage.setItem('mestra_fijos', JSON.stringify(fijos));
     }
-
-    // PorPagar
-    if (pRows.length && pRows[0][0]) {
-      const pp = pRows.map(r => ({
+    if (pRes.ok && pRes.rows.length > 1) {
+      const pp = pRes.rows.slice(1).filter(r => r[0]).map(r => ({
         id: +r[0], nombre: r[1], valor: r[2]?+r[2]:null, cat: r[3], quien: r[4],
         fechaLimite: r[5]||null, splitRichard: r[6]?+r[6]:null, splitEsposa: r[7]?+r[7]:null,
         pagado: r[8]==='SI', fechaPago: r[9]||null
       }));
       localStorage.setItem('mestra_pp', JSON.stringify(pp));
     }
-
-    // Ingresos
-    if (iRows.length && iRows[0][0]) {
-      m.ingresos = { richard: +iRows[0][1], esposa: +iRows[0][2] };
+    if (iRes.ok && iRes.rows.length > 1) {
+      m.ingresos = { richard: +iRes.rows[1][1], esposa: +iRes.rows[1][2] };
     }
 
     saveData();
     renderFijos();
     renderPP();
     renderAll();
-  } catch(e) { console.error('pullFromSheets', e); }
+    setSyncStatus('synced', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
+    showToast('✅ Datos descargados');
+  } catch(e) {
+    setSyncStatus('error', 'Error al descargar');
+  }
 }
 
-// Auto-push after any save
+// Auto-sync after save
 const _origSaveData = saveData;
-window.saveData = function() { _origSaveData(); if (accessToken) { pushToSheets().catch(()=>{}); } };
+window.saveData = function() {
+  _origSaveData();
+  pushToSheets().then(() => {
+    setSyncStatus('synced', 'Guardado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
+  }).catch(() => {});
+};
 
-// Load Google APIs when scripts are ready
-window.addEventListener('load', () => {
-  const waitGapi = setInterval(() => {
-    if (typeof gapi !== 'undefined') { clearInterval(waitGapi); gapiLoaded(); }
-  }, 200);
-  const waitGsi = setInterval(() => {
-    if (typeof google !== 'undefined' && google.accounts) { clearInterval(waitGsi); gsiLoaded(); }
-  }, 200);
+// Update sync bar button text
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('syncBtn');
+  if (btn) btn.textContent = 'Sincronizar';
+  setSyncStatus('synced', 'Listo · Apps Script');
+  // Auto pull on load
+  pullFromSheets();
 });
 
 // ===== INIT =====
