@@ -785,7 +785,9 @@
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let currentMonthKey = getMonthKey(new Date());
 let who = 'richard';
-let data = loadData();
+
+// En memoria — Sheets es la fuente de verdad
+let data = {};
 
 function getMonthKey(d) { return `${d.getFullYear()}-${d.getMonth()}`; }
 function getMonthName(key) {
@@ -793,15 +795,8 @@ function getMonthName(key) {
   return `${MONTHS[+m]} ${y}`;
 }
 
-function loadData() {
-  try {
-    const raw = localStorage.getItem('mestra_data');
-    return raw ? JSON.parse(raw) : {};
-  } catch(e) { return {}; }
-}
-function saveData() {
-  try { localStorage.setItem('mestra_data', JSON.stringify(data)); } catch(e) {}
-}
+function loadData() { return data; }
+function saveData() { /* no-op: todo va directo a Sheets */ }
 function getMonth() {
   if (!data[currentMonthKey]) {
     data[currentMonthKey] = { gastos: [], ingresos: { richard: 4000000, esposa: 2900000 } };
@@ -1128,12 +1123,10 @@ function setPpWho(w) {
   if (splitWrap) splitWrap.style.display = w === 'ambos' ? 'block' : 'none';
 }
 
-function loadPP() {
-  try { return JSON.parse(localStorage.getItem('mestra_pp') || '[]'); } catch(e) { return []; }
-}
-function savePP(list) {
-  try { localStorage.setItem('mestra_pp', JSON.stringify(list)); } catch(e) {}
-}
+// PorPagar en memoria
+let _pp = [];
+function loadPP() { return _pp; }
+function savePP(list) { _pp = list; }
 
 function agregarPorPagar() {
   const nombre = document.getElementById('ppNombre').value.trim();
@@ -1321,15 +1314,11 @@ async function pushToSheets() {
 
   const gastosRows = [['ID','Nombre','Valor','Tipo','Categoria','Quien','Quincena','Fecha'],
     ...gastos.map(g => [g.id, g.nombre, g.valor, g.tipo, g.cat, g.quien, g.quincena, g.fecha])];
-
   const fijosRows = [['ID','Nombre','Valor','Categoria','Quincena','Quien'],
     ...fijos.map(f => [f.id, f.nombre, f.valor, f.cat, f.quincena, f.quien])];
-
   const ppRows = [['ID','Nombre','Valor','Categoria','Quien','FechaLimite','SplitRichard','SplitEsposa','Pagado','FechaPago'],
     ...pp.map(p => [p.id, p.nombre, p.valor||'', p.cat, p.quien, p.fechaLimite||'', p.splitRichard||'', p.splitEsposa||'', p.pagado?'SI':'NO', p.fechaPago||''])];
-
-  const ingRows = [['Mes','Richard','Esposa'],
-    [currentMonthKey, ingresos.richard, ingresos.esposa]];
+  const ingRows = [['Mes','Richard','Esposa'], [currentMonthKey, ingresos.richard, ingresos.esposa]];
 
   await Promise.all([
     appsScriptPost('Gastos', gastosRows),
@@ -1339,8 +1328,9 @@ async function pushToSheets() {
   ]);
 }
 
+// Pull desde Sheets — única fuente de verdad
 async function pullFromSheets() {
-  setSyncStatus('syncing', 'Descargando datos...');
+  setSyncStatus('syncing', 'Cargando datos...');
   try {
     const [gRes, fRes, pRes, iRes] = await Promise.all([
       appsScriptGet('Gastos'),
@@ -1351,62 +1341,121 @@ async function pullFromSheets() {
 
     const m = getMonth();
 
-    if (gRes.ok && gRes.rows.length > 1 && gRes.rows.slice(1).some(r => r[0])) {
-      m.gastos = gRes.rows.slice(1).filter(r => r[0]).map(r => ({
+    if (gRes.ok && gRes.rows.length > 1) {
+      m.gastos = gRes.rows.slice(1).filter(r => r[0] && String(r[0]).trim() !== '').map(r => ({
         id: +r[0], nombre: r[1], valor: +r[2], tipo: r[3], cat: r[4], quien: r[5], quincena: r[6], fecha: r[7]
       }));
     }
-    if (fRes.ok && fRes.rows.length > 1 && fRes.rows.slice(1).some(r => r[0])) {
-      const fijos = fRes.rows.slice(1).filter(r => r[0]).map(r => ({
+
+    if (fRes.ok && fRes.rows.length > 1) {
+      _fijos = fRes.rows.slice(1).filter(r => r[0] && String(r[0]).trim() !== '').map(r => ({
         id: +r[0], nombre: r[1], valor: +r[2], cat: r[3], quincena: r[4], quien: r[5]
       }));
-      localStorage.setItem('mestra_fijos', JSON.stringify(fijos));
     }
-    if (pRes.ok && pRes.rows.length > 1 && pRes.rows.slice(1).some(r => r[0])) {
-      const pp = pRes.rows.slice(1).filter(r => r[0]).map(r => ({
+
+    if (pRes.ok && pRes.rows.length > 1) {
+      _pp = pRes.rows.slice(1).filter(r => r[0] && String(r[0]).trim() !== '').map(r => ({
         id: +r[0], nombre: r[1], valor: r[2]?+r[2]:null, cat: r[3], quien: r[4],
         fechaLimite: r[5]||null, splitRichard: r[6]?+r[6]:null, splitEsposa: r[7]?+r[7]:null,
         pagado: r[8]==='SI', fechaPago: r[9]||null
       }));
-      localStorage.setItem('mestra_pp', JSON.stringify(pp));
     }
+
     if (iRes.ok && iRes.rows.length > 1 && iRes.rows[1] && iRes.rows[1][1]) {
       m.ingresos = { richard: +iRes.rows[1][1], esposa: +iRes.rows[1][2] };
     }
 
-    saveData();
     renderFijos();
     renderPP();
     renderAll();
-    setSyncStatus('synced', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
-    showToast('✅ Datos descargados');
+    setSyncStatus('synced', 'Actualizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
   } catch(e) {
-    setSyncStatus('error', 'Error al descargar');
+    console.error('pullFromSheets error:', e);
+    setSyncStatus('error', 'Sin conexión');
   }
 }
 
-// Auto-sync after save — push to Sheets on every change
-const _origSaveData = saveData;
-window.saveData = function() {
-  _origSaveData();
+// Cada cambio push inmediato a Sheets
+async function syncAfterChange() {
   setSyncStatus('syncing', 'Guardando...');
-  pushToSheets().then(() => {
+  try {
+    await pushToSheets();
     setSyncStatus('synced', 'Guardado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
-  }).catch((err) => {
-    console.error('pushToSheets error:', err);
-    setSyncStatus('error', 'Error al guardar en Sheets');
-  });
-};
+  } catch(e) {
+    setSyncStatus('error', 'Error al guardar');
+  }
+}
 
-// Update sync bar button text
+// saveLocalOnly — no-op, solo para compatibilidad
+function saveLocalOnly() {}
+
+// Override saveData
+const _origSaveData = saveData;
+window.saveData = function() { _origSaveData(); syncAfterChange(); };
+
+// Al cargar: pull desde Sheets
 document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('syncBtn');
-  if (btn) btn.textContent = 'Sincronizar';
-  setSyncStatus('synced', 'Listo · Apps Script');
-  // Auto pull on load
+  setSyncStatus('syncing', 'Cargando...');
   pullFromSheets();
 });
 
+// ===== GASTOS FIJOS =====
+function loadFijos() {
+  try { return JSON.parse(localStorage.getItem("mestra_fijos") || "[]"); } catch(e) { return []; }
+}
+function saveFijos(fijos) {
+  try { localStorage.setItem("mestra_fijos", JSON.stringify(fijos)); } catch(e) {}
+}
+function agregarFijo() {
+  const nombre = document.getElementById("fijNombre").value.trim();
+  const valor = parseFloat(document.getElementById("fijValor").value);
+  const cat = document.getElementById("fijCategoria").value;
+  const quincena = document.getElementById("fijQuincena").value;
+  const quien = document.getElementById("fijQuien").value;
+  if (!nombre || valor <= 0) { showToast("⚠️ Completa todos los campos"); return; }
+  const fijos = loadFijos();
+  fijos.push({ id: Date.now(), nombre, valor, cat, quincena, quien });
+  saveFijos(fijos);
+  document.getElementById("fijNombre").value = "";
+  document.getElementById("fijValor").value = "";
+  renderFijos();
+  renderAll();
+  showToast("✅ Gasto fijo guardado");
+}
+function deleteFijo(id) {
+  const fijos = loadFijos().filter(f => f.id !== id);
+  saveFijos(fijos);
+  renderFijos();
+  renderAll();
+}
+function getTotalFijos() {
+  return loadFijos().reduce((s, f) => s + f.valor, 0);
+}
+function renderFijos() {
+  const fijos = loadFijos();
+  const el = document.getElementById("fijosList");
+  const labelEl = document.getElementById("totalFijosLabel");
+  if (!el || !labelEl) return;
+  const total = fijos.reduce((s, f) => s + f.valor, 0);
+  labelEl.textContent = fmt(total);
+  if (fijos.length === 0) {
+    el.innerHTML = "<div class='empty'><div class='empty-icon'>📌</div>Sin gastos fijos aún.<br>Agrega arriendo, servicios,<br>cuotas de deudas, etc.</div>";
+    return;
+  }
+  el.innerHTML = fijos.map(f => {
+    const c = CATS[f.cat] || CATS.otro;
+    const qLabel = f.quincena === "q1" ? "Días 1-15" : f.quincena === "q2" ? "Días 16-30" : "Ambas quincenas";
+    return `<div class="expense-item" style="margin-bottom:6px">
+      <div class="expense-icon" style="background:${c.color}22; color:${c.color}">${c.icon}</div>
+      <div class="expense-info">
+        <div class="expense-name">${f.nombre}</div>
+        <div class="expense-meta">${c.label} · ${qLabel} · <span class="chip chip-${f.quien}">${f.quien === "ambos" ? "Ambos" : f.quien === "richard" ? "Richard" : "Esposa"}</span></div>
+      </div>
+      <div class="expense-amount" style="color:var(--danger)">-${fmt(f.valor)}</div>
+      <button class="expense-delete" onclick="deleteFijo(${f.id})">×</button>
+    </div>`;
+  }).join("");
+}
 
 // ===== FORMATO DE DINERO =====
 function formatMoney(input) {
