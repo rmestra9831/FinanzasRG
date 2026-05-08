@@ -1260,7 +1260,7 @@ function renderPP() {
 
 
 // ===== GOOGLE APPS SCRIPT INTEGRATION =====
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyd7iaIpKd1daYsTXWpPcKJj2RQbTEV1s0FmUjtPE6aqke6Klp7lSTrqFx0wLs71iGM/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqpaqvVJWcGZJwQ8EnCkYoQVR2Xh71s6yIaIugwj4KQhMYQEWLUeIzD4MjNMJOnFVW/exec';
 
 function setSyncStatus(state, msg) {
   const dot = document.getElementById('syncDot');
@@ -1285,20 +1285,31 @@ async function handleAuthClick() {
 }
 
 async function appsScriptGet(sheet) {
-  const url = APPS_SCRIPT_URL + '?sheet=' + encodeURIComponent(sheet);
-  const res = await fetch(url, { redirect: 'follow' });
-  const text = await res.text();
-  try { return JSON.parse(text); } catch(e) { return { ok: false }; }
+  return new Promise((resolve) => {
+    const cbName = 'cb_' + Date.now();
+    const script = document.createElement('script');
+    window[cbName] = (data) => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      resolve(data);
+    };
+    script.onerror = () => resolve({ ok: false });
+    script.src = APPS_SCRIPT_URL + '?sheet=' + encodeURIComponent(sheet) + '&callback=' + cbName;
+    document.body.appendChild(script);
+    setTimeout(() => resolve({ ok: false }), 10000);
+  });
 }
 
 async function appsScriptPost(sheet, rows) {
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ sheet, action: 'write', rows }),
-    headers: { 'Content-Type': 'text/plain' }
-  });
-  const text = await res.text();
-  try { return JSON.parse(text); } catch(e) { return { ok: false }; }
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ sheet, action: 'write', rows }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    return { ok: true };
+  } catch(e) { return { ok: false }; }
 }
 
 async function pushToSheets() {
