@@ -1341,30 +1341,24 @@ async function handleAuthClick() {
 }
 
 async function appsScriptGet(sheet) {
-  return new Promise((resolve) => {
-    const cbName = 'cb_' + Date.now();
-    const script = document.createElement('script');
-    window[cbName] = (data) => {
-      delete window[cbName];
-      document.body.removeChild(script);
-      resolve(data);
-    };
-    script.onerror = () => resolve({ ok: false });
-    script.src = APPS_SCRIPT_URL + '?sheet=' + encodeURIComponent(sheet) + '&callback=' + cbName;
-    document.body.appendChild(script);
-    setTimeout(() => resolve({ ok: false }), 10000);
-  });
+  try {
+    const url = APPS_SCRIPT_URL + '?sheet=' + encodeURIComponent(sheet) + '&t=' + Date.now();
+    const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const text = await res.text();
+    try { return JSON.parse(text); } catch(e) { return { ok: false }; }
+  } catch(e) { return { ok: false }; }
 }
 
 async function appsScriptPost(sheet, rows) {
   try {
-    await fetch(APPS_SCRIPT_URL, {
+    const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      redirect: 'follow',
       body: JSON.stringify({ sheet, action: 'write', rows }),
       headers: { 'Content-Type': 'text/plain' }
     });
-    return { ok: true };
+    const text = await res.text();
+    try { return JSON.parse(text); } catch(e) { return { ok: true }; }
   } catch(e) { return { ok: false }; }
 }
 
