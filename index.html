@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Gastos Familia Mestra</title>
+<title>Finanzas RG</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -411,6 +411,7 @@
 
 </style>
 
+  <script src="config.js"></script>
 </head>
 <body>
 
@@ -479,7 +480,7 @@
       <input type="text" id="inputNombre" placeholder="Descripción (ej: Mercado)" />
     </div>
     <div class="form-row">
-      <input type="number" id="inputValor" placeholder="Valor en pesos" inputmode="numeric" style="flex:1" />
+      <input type="text" id="inputValor" placeholder="0" inputmode="decimal" style="flex:1" oninput="formatMoney(this)" />
       <select id="inputTipo" style="width:110px; flex-shrink:0">
         <option value="gasto">Gasto</option>
         <option value="ingreso">Ingreso extra</option>
@@ -515,10 +516,10 @@
   <div class="add-form">
     <div style="font-size:10px; color:var(--muted); margin-bottom:10px">Salarios mensuales base</div>
     <div class="form-row">
-      <input type="number" id="ingRichard" placeholder="Ingreso Richard ($)" inputmode="numeric" value="" />
+      <input type="text" id="ingRichard" placeholder="4.000.000" inputmode="decimal" oninput="formatMoney(this)" />
     </div>
     <div class="form-row">
-      <input type="number" id="ingEsposa" placeholder="Ingreso Esposa ($)" inputmode="numeric" value="" />
+      <input type="text" id="ingEsposa" placeholder="2.900.000" inputmode="decimal" oninput="formatMoney(this)" />
     </div>
     <div class="form-row">
       <button class="btn" onclick="guardarIngresos()" style="width:100%">Guardar Ingresos</button>
@@ -540,7 +541,7 @@
       <input type="text" id="fijNombre" placeholder="Nombre (ej: Arriendo)" />
     </div>
     <div class="form-row">
-      <input type="number" id="fijValor" placeholder="Valor mensual" inputmode="numeric" style="flex:1" />
+      <input type="text" id="fijValor" placeholder="0" inputmode="decimal" oninput="formatMoney(this)" style="flex:1" />
       <select id="fijCategoria" style="width:130px; flex-shrink:0">
         <option value="vivienda">🏠 Vivienda</option>
         <option value="alimentacion">🛒 Alimentación</option>
@@ -697,7 +698,7 @@
       <input type="text" id="ppNombre" placeholder="¿Qué hay que pagar? (ej: Recibo luz)" />
     </div>
     <div class="form-row">
-      <input type="number" id="ppValor" placeholder="Valor total (opcional)" inputmode="numeric" style="flex:1" />
+      <input type="text" id="ppValor" placeholder="0 (opcional)" inputmode="decimal" style="flex:1" oninput="formatMoney(this)" />
       <select id="ppCategoria" style="width:130px; flex-shrink:0">
         <option value="servicios">💡 Servicios</option>
         <option value="vivienda">🏠 Vivienda</option>
@@ -725,10 +726,10 @@
       <div style="font-size:10px; color:var(--muted); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase">División (opcional)</div>
       <div class="form-row">
         <div style="flex:1; position:relative">
-          <input type="number" id="ppSplitRichard" placeholder="Parte Richard" inputmode="numeric" />
+          <input type="text" id="ppSplitRichard" placeholder="Parte Richard" type="text" inputmode="decimal" oninput="formatMoney(this)" />
         </div>
         <div style="flex:1; position:relative">
-          <input type="number" id="ppSplitEsposa" placeholder="Parte Esposa" inputmode="numeric" />
+          <input type="text" id="ppSplitEsposa" placeholder="Parte Esposa" inputmode="numeric" oninput="formatMoney(this)" />
         </div>
       </div>
       <div style="font-size:10px; color:var(--muted); text-align:center">Déjalo vacío si aún no saben cuánto cada uno</div>
@@ -844,12 +845,12 @@ function fmtFull(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
 // ===== ADD GASTO =====
 function agregarGasto() {
   const nombre = document.getElementById('inputNombre').value.trim();
-  const valor = parseFloat(document.getElementById('inputValor').value);
+  const valor = parseMoney(document.getElementById('inputValor'));
   const tipo = document.getElementById('inputTipo').value;
   const cat = document.getElementById('inputCategoria').value;
   const q = document.getElementById('inputQuincena').value;
 
-  if (!nombre || isNaN(valor) || valor <= 0) { showToast('⚠️ Completa todos los campos'); return; }
+  if (!nombre || valor <= 0) { showToast('⚠️ Completa todos los campos'); return; }
 
   const m = getMonth();
   m.gastos.push({
@@ -860,17 +861,18 @@ function agregarGasto() {
   saveData();
   document.getElementById('inputNombre').value = '';
   document.getElementById('inputValor').value = '';
+  document.getElementById('inputNombre').focus();
   renderAll();
   showToast('✅ Registrado');
 }
 
 // ===== SAVE INGRESOS =====
 function guardarIngresos() {
-  const r = parseFloat(document.getElementById('ingRichard').value);
-  const e = parseFloat(document.getElementById('ingEsposa').value);
+  const r = parseMoney(document.getElementById('ingRichard'));
+  const e = parseMoney(document.getElementById('ingEsposa'));
   const m = getMonth();
-  if (!isNaN(r) && r > 0) m.ingresos.richard = r;
-  if (!isNaN(e) && e > 0) m.ingresos.esposa = e;
+  if (r > 0) m.ingresos.richard = r;
+  if (e > 0) m.ingresos.esposa = e;
   saveData();
   renderAll();
   showToast('✅ Ingresos guardados');
@@ -1069,7 +1071,7 @@ function agregarFijo() {
   const cat = document.getElementById("fijCategoria").value;
   const quincena = document.getElementById("fijQuincena").value;
   const quien = document.getElementById("fijQuien").value;
-  if (!nombre || isNaN(valor) || valor <= 0) { showToast("⚠️ Completa todos los campos"); return; }
+  if (!nombre || valor <= 0) { showToast("⚠️ Completa todos los campos"); return; }
   const fijos = loadFijos();
   fijos.push({ id: Date.now(), nombre, valor, cat, quincena, quien });
   saveFijos(fijos);
@@ -1136,20 +1138,19 @@ function savePP(list) {
 
 function agregarPorPagar() {
   const nombre = document.getElementById('ppNombre').value.trim();
-  const valorRaw = document.getElementById('ppValor').value;
-  const valor = valorRaw ? parseFloat(valorRaw) : null;
+  const valor = parseMoney(document.getElementById('ppValor')) || null;
   const cat = document.getElementById('ppCategoria').value;
   const fechaLimite = document.getElementById('ppFechaLimite').value;
-  const splitR = document.getElementById('ppSplitRichard').value;
-  const splitE = document.getElementById('ppSplitEsposa').value;
+  const splitR = parseMoney(document.getElementById('ppSplitRichard'));
+  const splitE = parseMoney(document.getElementById('ppSplitEsposa'));
 
   if (!nombre) { showToast('⚠️ Escribe qué hay que pagar'); return; }
 
   const item = {
     id: Date.now(), nombre, valor, cat, quien: ppWho,
     fechaLimite: fechaLimite || null,
-    splitRichard: splitR ? parseFloat(splitR) : null,
-    splitEsposa: splitE ? parseFloat(splitE) : null,
+    splitRichard: splitR > 0 ? splitR : null,
+    splitEsposa: splitE > 0 ? splitE : null,
     pagado: false, fechaPago: null
   };
 
@@ -1260,7 +1261,7 @@ function renderPP() {
 
 
 // ===== GOOGLE APPS SCRIPT INTEGRATION =====
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0hImBrokqdUJOoKppQOPYqVWJ7V5_2xT62EhMub9RwHcGxD1Gr87McZCMXKXIFiF_/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxapv2W8RNfAEObnlPVDpM82YcHR4_RCBnY7mpt1Pr3G5-U8b_-U5FAH6cxnwWMH-Ad/exec';
 
 function setSyncStatus(state, msg) {
   const dot = document.getElementById('syncDot');
@@ -1351,18 +1352,18 @@ async function pullFromSheets() {
 
     const m = getMonth();
 
-    if (gRes.ok && gRes.rows.length > 1) {
+    if (gRes.ok && gRes.rows.length > 1 && gRes.rows.slice(1).some(r => r[0])) {
       m.gastos = gRes.rows.slice(1).filter(r => r[0]).map(r => ({
         id: +r[0], nombre: r[1], valor: +r[2], tipo: r[3], cat: r[4], quien: r[5], quincena: r[6], fecha: r[7]
       }));
     }
-    if (fRes.ok && fRes.rows.length > 1) {
+    if (fRes.ok && fRes.rows.length > 1 && fRes.rows.slice(1).some(r => r[0])) {
       const fijos = fRes.rows.slice(1).filter(r => r[0]).map(r => ({
         id: +r[0], nombre: r[1], valor: +r[2], cat: r[3], quincena: r[4], quien: r[5]
       }));
       localStorage.setItem('mestra_fijos', JSON.stringify(fijos));
     }
-    if (pRes.ok && pRes.rows.length > 1) {
+    if (pRes.ok && pRes.rows.length > 1 && pRes.rows.slice(1).some(r => r[0])) {
       const pp = pRes.rows.slice(1).filter(r => r[0]).map(r => ({
         id: +r[0], nombre: r[1], valor: r[2]?+r[2]:null, cat: r[3], quien: r[4],
         fechaLimite: r[5]||null, splitRichard: r[6]?+r[6]:null, splitEsposa: r[7]?+r[7]:null,
@@ -1370,7 +1371,7 @@ async function pullFromSheets() {
       }));
       localStorage.setItem('mestra_pp', JSON.stringify(pp));
     }
-    if (iRes.ok && iRes.rows.length > 1) {
+    if (iRes.ok && iRes.rows.length > 1 && iRes.rows[1] && iRes.rows[1][1]) {
       m.ingresos = { richard: +iRes.rows[1][1], esposa: +iRes.rows[1][2] };
     }
 
@@ -1385,13 +1386,17 @@ async function pullFromSheets() {
   }
 }
 
-// Auto-sync after save
+// Auto-sync after save — push to Sheets on every change
 const _origSaveData = saveData;
 window.saveData = function() {
   _origSaveData();
+  setSyncStatus('syncing', 'Guardando...');
   pushToSheets().then(() => {
     setSyncStatus('synced', 'Guardado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
-  }).catch(() => {});
+  }).catch((err) => {
+    console.error('pushToSheets error:', err);
+    setSyncStatus('error', 'Error al guardar en Sheets');
+  });
 };
 
 // Update sync bar button text
@@ -1402,6 +1407,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Auto pull on load
   pullFromSheets();
 });
+
+
+// ===== FORMATO DE DINERO =====
+function formatMoney(input) {
+  const pos = input.selectionStart;
+  const prev = input.value;
+  let raw = prev.replace(/[^0-9]/g, '');
+  if (!raw) { input.value = ''; return; }
+  const num = parseInt(raw, 10);
+  const formatted = num.toLocaleString('es-CO');
+  input.value = formatted;
+  // Restore cursor position adjusted for added separators
+  const diff = formatted.length - prev.length;
+  try { input.setSelectionRange(pos + diff, pos + diff); } catch(e) {}
+}
+
+function parseMoney(input) {
+  if (!input) return 0;
+  return parseInt(input.value.replace(/[^0-9]/g, ''), 10) || 0;
+}
+
+function moneyInput(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  return parseMoney(el);
+}
 
 // ===== INIT =====
 renderFijos();
