@@ -1267,7 +1267,7 @@ function renderPP() {
 // ===== GOOGLE SHEETS INTEGRATION =====
 const CLIENT_ID = '250556811452-71rtq5bqc0qu943acdabqnifohee5dif.apps.googleusercontent.com';
 const SHEET_ID  = '1-vgLjK43GT-TUtRhSv9oKs0My3KKCtwR7v_KRpNCjH4';
-const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 const SHEETS    = ['Gastos','Fijos','PorPagar','Ingresos'];
 
 let tokenClient = null;
@@ -1290,7 +1290,7 @@ function setSyncStatus(state, msg) {
 // Load GAPI
 function gapiLoaded() {
   gapi.load('client', async () => {
-    await gapi.client.init({ discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
+    await gapi.client.init({ apiKey: '', discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
     gapiReady = true;
     maybeInit();
   });
@@ -1336,7 +1336,7 @@ function handleAuthClick() {
     return;
   }
   if (!tokenClient) { setSyncStatus('error', 'Google no cargó aún'); return; }
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  tokenClient.requestAccessToken({ prompt: 'consent', hint: 'richardmestra9831@gmail.com' });
 }
 
 // Ensure all sheets exist
