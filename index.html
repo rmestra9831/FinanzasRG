@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gastos Familia Mestra</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d12;
+    --surface: #13161f;
+    --surface2: #1a1e2b;
+    --border: #222636;
+    --text: #e4e8f5;
+    --muted: #5a6080;
+    --accent: #f0c040;
+    --danger: #ff4d6d;
+    --warning: #ff8c42;
+    --good: #3de68e;
+    --blue: #4d9fff;
+    --purple: #a78bfa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(160deg, #13161f 0%, #1a1e2b 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 16px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .header-label {
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .month-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    cursor: pointer;
+  }
+  .month-badge span { display: block; font-family: 'Syne', sans-serif; font-size: 13px; color: var(--text); font-weight: 700; }
+
+  /* SUMMARY BAR */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .sum-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 10px 8px;
+  }
+  .sum-label { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .sum-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+  .sum-val.green { color: var(--good); }
+  .sum-val.red { color: var(--danger); }
+  .sum-val.yellow { color: var(--accent); }
+
+  /* PROGRESS BAR */
+  .progress-wrap { margin-top: 10px; }
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    background: linear-gradient(90deg, var(--good), var(--accent), var(--danger));
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+  }
+
+  /* TABS NAV */
+  .nav-tabs {
+    display: flex;
+    padding: 12px 16px 0;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .nav-tab.active {
+    background: var(--accent);
+    color: #0b0d12;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* SECTION */
+  .section { padding: 14px 16px 0; }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ADD FORM */
+  .add-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .form-row:last-child { margin-bottom: 0; }
+  input, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 12px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  select option { background: var(--surface2); }
+  .btn {
+    background: var(--accent);
+    color: #0b0d12;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn.danger { background: var(--danger); color: white; }
+  .btn.sm { padding: 6px 10px; font-size: 10px; border-radius: 6px; }
+
+  /* WHO SELECTOR */
+  .who-selector { display: flex; gap: 6px; margin-bottom: 8px; }
+  .who-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .who-btn.active-richard { background: rgba(77,159,255,0.2); border-color: var(--blue); color: var(--blue); }
+  .who-btn.active-esposa { background: rgba(167,139,250,0.2); border-color: var(--purple); color: var(--purple); }
+  .who-btn.active-ambos { background: rgba(240,192,64,0.2); border-color: var(--accent); color: var(--accent); }
+
+  /* EXPENSE LIST */
+  .expense-list { display: flex; flex-direction: column; gap: 6px; }
+  .expense-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .expense-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .expense-info { flex: 1; min-width: 0; }
+  .expense-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .expense-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .expense-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .expense-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .expense-delete:active { color: var(--danger); }
+
+  /* CATEGORY BREAKDOWN */
+  .cat-grid { display: flex; flex-direction: column; gap: 6px; }
+  .cat-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .cat-name { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; }
+  .cat-amount { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; }
+  .cat-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* DEUDAS TAB */
+  .debt-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+  }
+  .debt-item-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .debt-item-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+  .debt-item-cuota { font-size: 11px; color: var(--muted); }
+  .debt-progress { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .debt-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--danger), var(--warning)); }
+  .debt-detail { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 6px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 8px 0 12px;
+  }
+  .bnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: all 0.2s;
+  }
+  .bnav-icon { font-size: 20px; line-height: 1; }
+  .bnav-label { font-size: 8px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); transition: color 0.2s; }
+  .bnav-item.active .bnav-label { color: var(--accent); }
+  .bnav-item.active .bnav-icon { filter: drop-shadow(0 0 6px rgba(240,192,64,0.6)); }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* TAB PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CHIP */
+  .chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .chip-richard { background: rgba(77,159,255,0.15); color: var(--blue); }
+  .chip-esposa { background: rgba(167,139,250,0.15); color: var(--purple); }
+  .chip-ambos { background: rgba(240,192,64,0.15); color: var(--accent); }
+
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--good);
+    color: #0b0d12;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 20px;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* SYNC STATUS */
+  .sync-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .sync-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .sync-dot.synced { background: var(--good); }
+  .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
+  .sync-dot.error { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .sync-btn {
+    margin-left: auto;
+    background: none; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; padding: 3px 10px; cursor: pointer;
+  }
+  .google-btn {
+    background: #fff; color: #333;
+    border: none; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 13px; padding: 12px 20px;
+    cursor: pointer; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+
+</style>
+
+  <!-- Google Identity & Sheets API -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+  <meta name="google-signin-client_id" content="250556811452-71rtq5bqc0qu943acdabqnifohee5dif.apps.googleusercontent.com">
+
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-top">
+    <div>
+      <div class="header-label">Familia Mestra · Control Financiero</div>
+      <div class="header-title" id="headerTitle">Cargando...</div>
+    </div>
+    <div class="month-badge" onclick="changeMonth()">
+      <div style="font-size:8px; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px">Mes</div>
+      <span id="currentMonthBadge">—</span>
+    </div>
+  </div>
+  <div class="summary-bar">
+    <div class="sum-item">
+      <div class="sum-label">Ingresos</div>
+      <div class="sum-val green" id="sumIngresos">$0</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-label">Gastos</div>
+      <div class="sum-val red" id="sumGastos">$0</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-label">Disponible</div>
+      <div class="sum-val yellow" id="sumDisponible">$0</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-labels"><span>$0</span><span id="progressLabel">0% del ingreso</span></div>
+  </div>
+</header>
+
+
+<!-- SYNC BAR -->
+<div class="sync-bar" id="syncBar">
+  <div class="sync-dot" id="syncDot"></div>
+  <span id="syncStatus">Sin conectar a Google</span>
+  <button class="sync-btn" onclick="handleAuthClick()" id="syncBtn">Conectar</button>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="showPanel('agregar', this)">+ Agregar</div>
+  <div class="nav-tab" onclick="showPanel('fijos', this)">📌 Fijos</div>
+  <div class="nav-tab" onclick="showPanel('pagar', this)">💸 Por Pagar</div>
+  <div class="nav-tab" onclick="showPanel('gastos', this)">Gastos</div>
+  <div class="nav-tab" onclick="showPanel('categorias', this)">Categorías</div>
+  <div class="nav-tab" onclick="showPanel('deudas', this)">Deudas</div>
+  <div class="nav-tab" onclick="showPanel('resumen', this)">Resumen</div>
+</div>
+
+<!-- ===== PANEL: AGREGAR ===== -->
+<div class="panel active" id="panel-agregar">
+<div class="section">
+  <div class="section-title">Nuevo Gasto Variable</div>
+  <div class="add-form">
+    <div class="who-selector">
+      <div class="who-btn active-richard" id="who-richard" onclick="setWho('richard')">Richard</div>
+      <div class="who-btn" id="who-esposa" onclick="setWho('esposa')">Esposa</div>
+      <div class="who-btn" id="who-ambos" onclick="setWho('ambos')">Ambos</div>
+    </div>
+    <div class="form-row">
+      <input type="text" id="inputNombre" placeholder="Descripción (ej: Mercado)" />
+    </div>
+    <div class="form-row">
+      <input type="number" id="inputValor" placeholder="Valor en pesos" inputmode="numeric" style="flex:1" />
+      <select id="inputTipo" style="width:110px; flex-shrink:0">
+        <option value="gasto">Gasto</option>
+        <option value="ingreso">Ingreso extra</option>
+        <option value="deuda">Cuota deuda</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <select id="inputCategoria" style="flex:1">
+        <option value="vivienda">🏠 Vivienda</option>
+        <option value="alimentacion">🛒 Alimentación</option>
+        <option value="transporte">🚗 Transporte</option>
+        <option value="servicios">💡 Servicios</option>
+        <option value="bebe">👶 Bebé</option>
+        <option value="salud">🏥 Salud</option>
+        <option value="deudas">💳 Deudas/Créditos</option>
+        <option value="educacion">📚 Educación</option>
+        <option value="entretenimiento">🎮 Entretenimiento</option>
+        <option value="negocio">🏪 Papelería</option>
+        <option value="otro">📌 Otro</option>
+      </select>
+      <select id="inputQuincena" style="width:90px; flex-shrink:0">
+        <option value="q1">Día 1-15</option>
+        <option value="q2">Día 16-30</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <button class="btn" onclick="agregarGasto()" style="width:100%">Registrar</button>
+    </div>
+  </div>
+
+  <!-- INGRESOS FIJOS -->
+  <div class="section-title" style="margin-top:8px">Ingresos del Mes</div>
+  <div class="add-form">
+    <div style="font-size:10px; color:var(--muted); margin-bottom:10px">Salarios mensuales base</div>
+    <div class="form-row">
+      <input type="number" id="ingRichard" placeholder="Ingreso Richard ($)" inputmode="numeric" value="" />
+    </div>
+    <div class="form-row">
+      <input type="number" id="ingEsposa" placeholder="Ingreso Esposa ($)" inputmode="numeric" value="" />
+    </div>
+    <div class="form-row">
+      <button class="btn" onclick="guardarIngresos()" style="width:100%">Guardar Ingresos</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== PANEL: GASTOS FIJOS ===== -->
+<div class="panel" id="panel-fijos">
+<div class="section">
+  <div class="section-title">Gastos Fijos Mensuales</div>
+  <div style="font-size:11px; color:var(--muted); margin-bottom:12px; line-height:1.6">
+    Estos se suman automáticamente cada mes al total de gastos. Solo los configuras una vez.
+  </div>
+
+  <div class="add-form">
+    <div class="form-row">
+      <input type="text" id="fijNombre" placeholder="Nombre (ej: Arriendo)" />
+    </div>
+    <div class="form-row">
+      <input type="number" id="fijValor" placeholder="Valor mensual" inputmode="numeric" style="flex:1" />
+      <select id="fijCategoria" style="width:130px; flex-shrink:0">
+        <option value="vivienda">🏠 Vivienda</option>
+        <option value="alimentacion">🛒 Alimentación</option>
+        <option value="transporte">🚗 Transporte</option>
+        <option value="servicios">💡 Servicios</option>
+        <option value="bebe">👶 Bebé</option>
+        <option value="salud">🏥 Salud</option>
+        <option value="deudas">💳 Deudas</option>
+        <option value="educacion">📚 Educación</option>
+        <option value="entretenimiento">🎮 Entrete.</option>
+        <option value="negocio">🏪 Papelería</option>
+        <option value="otro">📌 Otro</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <select id="fijQuincena" style="flex:1">
+        <option value="q1">Se paga días 1-15</option>
+        <option value="q2">Se paga días 16-30</option>
+        <option value="ambas">Ambas quincenas</option>
+      </select>
+      <select id="fijQuien" style="width:110px; flex-shrink:0">
+        <option value="ambos">Ambos</option>
+        <option value="richard">Richard</option>
+        <option value="esposa">Esposa</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <button class="btn" onclick="agregarFijo()" style="width:100%">+ Agregar Gasto Fijo</button>
+    </div>
+  </div>
+
+  <!-- LISTA DE FIJOS -->
+  <div class="section-title" style="margin-top:4px">
+    Fijos configurados · Total: <span id="totalFijosLabel" style="color:var(--danger)">$0</span>
+  </div>
+  <div id="fijosList">
+    <div class="empty"><div class="empty-icon">📌</div>Sin gastos fijos aún.<br>Agrega arriendo, servicios,<br>cuotas de deudas, etc.</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== PANEL: GASTOS ===== -->
+<div class="panel" id="panel-gastos">
+<div class="section">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+    <div class="section-title" style="margin-bottom:0; border:none; padding:0">Todos los registros</div>
+    <button class="btn danger sm" onclick="limpiarTodo()">Limpiar mes</button>
+  </div>
+  <div class="expense-list" id="expenseList">
+    <div class="empty"><div class="empty-icon">📋</div>Sin registros este mes.<br>Ve a "+ Agregar" para empezar.</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== PANEL: CATEGORIAS ===== -->
+<div class="panel" id="panel-categorias">
+<div class="section">
+  <div class="section-title">Distribución por categoría</div>
+  <div class="cat-grid" id="catGrid">
+    <div class="empty"><div class="empty-icon">📊</div>Aún sin datos.<br>Registra gastos primero.</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== PANEL: DEUDAS ===== -->
+<div class="panel" id="panel-deudas">
+<div class="section">
+  <div class="section-title">Estado de Obligaciones</div>
+
+  <div class="debt-item" style="border-color: rgba(255,77,109,0.4)">
+    <div class="debt-item-header">
+      <div>
+        <div class="debt-item-name">Compra Cartera Davivienda</div>
+        <div class="debt-item-cuota">Cuota: $449.000 · Vence 13/may</div>
+      </div>
+      <div style="font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:var(--danger)">$10.4M</div>
+    </div>
+    <div class="debt-progress"><div class="debt-bar-fill" style="width:72%"></div></div>
+    <div class="debt-detail"><span>18.57% E.A.</span><span>27 cuotas pend.</span><span style="color:var(--danger)">🔴 En mora</span></div>
+  </div>
+
+  <div class="debt-item" style="border-color: rgba(255,140,66,0.4)">
+    <div class="debt-item-header">
+      <div>
+        <div class="debt-item-name">TC Bancolombia *0391</div>
+        <div class="debt-item-cuota">Ampliada · Sin cuota este mes</div>
+      </div>
+      <div style="font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:var(--warning)">$5.0M</div>
+    </div>
+    <div class="debt-progress"><div class="debt-bar-fill" style="width:100%"></div></div>
+    <div class="debt-detail"><span>26.70% E.A.</span><span>Cupo agotado</span><span style="color:var(--good)">✅ Gestionada</span></div>
+  </div>
+
+  <div class="debt-item" style="border-color: rgba(255,140,66,0.4)">
+    <div class="debt-item-header">
+      <div>
+        <div class="debt-item-name">TC Davivienda *0909</div>
+        <div class="debt-item-cuota">Mín: $839.169 · Vence 10/may</div>
+      </div>
+      <div style="font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:var(--warning)">$6.5M</div>
+    </div>
+    <div class="debt-progress"><div class="debt-bar-fill" style="width:54%"></div></div>
+    <div class="debt-detail"><span>26.67% E.A.</span><span>Cupo disp: $5.6M</span><span style="color:var(--warning)">⏳ Pendiente</span></div>
+  </div>
+
+  <div class="debt-item">
+    <div class="debt-item-header">
+      <div>
+        <div class="debt-item-name">CrediExpress Davivienda</div>
+        <div class="debt-item-cuota">Mín: $424.602 · Descontada ✅</div>
+      </div>
+      <div style="font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:var(--blue)">$5.7M</div>
+    </div>
+    <div class="debt-progress"><div class="debt-bar-fill" style="width:25%"></div></div>
+    <div class="debt-detail"><span>24.89% E.A.</span><span>47 cuotas pend.</span><span style="color:var(--good)">✅ Al día</span></div>
+  </div>
+
+  <div class="debt-item">
+    <div class="debt-item-header">
+      <div>
+        <div class="debt-item-name">Libranza Bancolombia</div>
+        <div class="debt-item-cuota">$253.529 · Descuento nómina ✅</div>
+      </div>
+      <div style="font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:var(--blue)">$10.3M</div>
+    </div>
+    <div class="debt-progress"><div class="debt-bar-fill" style="width:100%"></div></div>
+    <div class="debt-detail"><span>25.04% E.A.</span><span>Cuota 1/N</span><span style="color:var(--good)">✅ Al día</span></div>
+  </div>
+
+  <div style="background:var(--surface); border:1px dashed var(--border); border-radius:10px; padding:12px 14px; margin-top:6px; font-size:11px; color:var(--muted); line-height:1.6">
+    📋 Faltan por agregar: 2 obligaciones tuyas + TC esposa.<br>
+    Envíale los extractos a Claude para actualizar.
+  </div>
+
+  <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-top:6px;">
+    <div style="font-family:'Syne',sans-serif; font-size:11px; color:var(--muted); margin-bottom:8px">TOTAL PARCIAL DEUDA</div>
+    <div style="font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--danger)">$37.9M</div>
+    <div style="font-size:10px; color:var(--muted); margin-top:4px">De $45M estimados · Faltan ~$7.1M</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== PANEL: POR PAGAR ===== -->
+<div class="panel" id="panel-pagar">
+<div class="section">
+  <div class="section-title">Por Pagar</div>
+  <div style="font-size:11px; color:var(--muted); margin-bottom:12px; line-height:1.6">
+    Cosas pendientes de pagar este mes. Márcalas cuando las canceles.
+  </div>
+
+  <!-- FORM -->
+  <div class="add-form">
+    <div class="form-row">
+      <input type="text" id="ppNombre" placeholder="¿Qué hay que pagar? (ej: Recibo luz)" />
+    </div>
+    <div class="form-row">
+      <input type="number" id="ppValor" placeholder="Valor total (opcional)" inputmode="numeric" style="flex:1" />
+      <select id="ppCategoria" style="width:130px; flex-shrink:0">
+        <option value="servicios">💡 Servicios</option>
+        <option value="vivienda">🏠 Vivienda</option>
+        <option value="alimentacion">🛒 Alimentación</option>
+        <option value="transporte">🚗 Transporte</option>
+        <option value="bebe">👶 Bebé</option>
+        <option value="salud">🏥 Salud</option>
+        <option value="deudas">💳 Deudas</option>
+        <option value="educacion">📚 Educación</option>
+        <option value="negocio">🏪 Papelería</option>
+        <option value="otro">📌 Otro</option>
+      </select>
+    </div>
+
+    <!-- Quién paga -->
+    <div style="font-size:10px; color:var(--muted); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase">¿Quién paga?</div>
+    <div class="who-selector" style="margin-bottom:8px">
+      <div class="who-btn active-richard" id="pp-richard" onclick="setPpWho('richard')">Richard</div>
+      <div class="who-btn" id="pp-esposa" onclick="setPpWho('esposa')">Esposa</div>
+      <div class="who-btn" id="pp-ambos" onclick="setPpWho('ambos')">Ambos</div>
+    </div>
+
+    <!-- Split opcional (solo si ambos) -->
+    <div id="ppSplitWrap" style="display:none; margin-bottom:8px">
+      <div style="font-size:10px; color:var(--muted); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase">División (opcional)</div>
+      <div class="form-row">
+        <div style="flex:1; position:relative">
+          <input type="number" id="ppSplitRichard" placeholder="Parte Richard" inputmode="numeric" />
+        </div>
+        <div style="flex:1; position:relative">
+          <input type="number" id="ppSplitEsposa" placeholder="Parte Esposa" inputmode="numeric" />
+        </div>
+      </div>
+      <div style="font-size:10px; color:var(--muted); text-align:center">Déjalo vacío si aún no saben cuánto cada uno</div>
+    </div>
+
+    <div class="form-row">
+      <input type="date" id="ppFechaLimite" style="flex:1" />
+      <div style="font-size:10px; color:var(--muted); align-self:center; flex-shrink:0; margin-left:4px">Fecha límite</div>
+    </div>
+    <div class="form-row">
+      <button class="btn" onclick="agregarPorPagar()" style="width:100%">+ Agregar</button>
+    </div>
+  </div>
+
+  <!-- TOTALES -->
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px">
+    <div class="sum-item">
+      <div class="sum-label">Pendiente</div>
+      <div class="sum-val red" id="ppTotalPend">$0</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-label">Pagado</div>
+      <div class="sum-val green" id="ppTotalPag">$0</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-label">Items</div>
+      <div class="sum-val yellow" id="ppCount">0</div>
+    </div>
+  </div>
+
+  <!-- LISTA -->
+  <div class="section-title">Pendientes</div>
+  <div id="ppListPend"></div>
+  <div class="section-title" style="margin-top:12px">Pagados ✅</div>
+  <div id="ppListPag"></div>
+</div>
+</div>
+
+<!-- ===== PANEL: RESUMEN ===== -->
+<div class="panel" id="panel-resumen">
+<div class="section">
+  <div class="section-title">Resumen del Mes</div>
+  <div id="resumenContent">
+    <div class="empty"><div class="empty-icon">📈</div>Registra gastos para ver el análisis.</div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let currentMonthKey = getMonthKey(new Date());
+let who = 'richard';
+let data = loadData();
+
+function getMonthKey(d) { return `${d.getFullYear()}-${d.getMonth()}`; }
+function getMonthName(key) {
+  const [y, m] = key.split('-');
+  return `${MONTHS[+m]} ${y}`;
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('mestra_data');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function saveData() {
+  try { localStorage.setItem('mestra_data', JSON.stringify(data)); } catch(e) {}
+}
+function getMonth() {
+  if (!data[currentMonthKey]) {
+    data[currentMonthKey] = { gastos: [], ingresos: { richard: 4000000, esposa: 2900000 } };
+  }
+  return data[currentMonthKey];
+}
+
+// ===== CATEGORIES =====
+const CATS = {
+  vivienda: { label: 'Vivienda', icon: '🏠', color: '#4d9fff' },
+  alimentacion: { label: 'Alimentación', icon: '🛒', color: '#3de68e' },
+  transporte: { label: 'Transporte', icon: '🚗', color: '#f0c040' },
+  servicios: { label: 'Servicios', icon: '💡', color: '#ff8c42' },
+  bebe: { label: 'Bebé', icon: '👶', color: '#a78bfa' },
+  salud: { label: 'Salud', icon: '🏥', color: '#ff4d6d' },
+  deudas: { label: 'Deudas/Créditos', icon: '💳', color: '#ff4d6d' },
+  educacion: { label: 'Educación', icon: '📚', color: '#4d9fff' },
+  entretenimiento: { label: 'Entretenimiento', icon: '🎮', color: '#a78bfa' },
+  negocio: { label: 'Papelería', icon: '🏪', color: '#3de68e' },
+  otro: { label: 'Otro', icon: '📌', color: '#5a6080' }
+};
+
+// ===== WHO =====
+function setWho(w) {
+  who = w;
+  ['richard','esposa','ambos'].forEach(id => {
+    const el = document.getElementById('who-' + id);
+    el.className = 'who-btn' + (id === w ? ` active-${id}` : '');
+  });
+}
+
+// ===== FORMAT =====
+function fmt(n) {
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return '$' + Math.round(n/1000) + 'K';
+  return '$' + Math.round(n).toLocaleString('es-CO');
+}
+function fmtFull(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
+
+// ===== ADD GASTO =====
+function agregarGasto() {
+  const nombre = document.getElementById('inputNombre').value.trim();
+  const valor = parseFloat(document.getElementById('inputValor').value);
+  const tipo = document.getElementById('inputTipo').value;
+  const cat = document.getElementById('inputCategoria').value;
+  const q = document.getElementById('inputQuincena').value;
+
+  if (!nombre || isNaN(valor) || valor <= 0) { showToast('⚠️ Completa todos los campos'); return; }
+
+  const m = getMonth();
+  m.gastos.push({
+    id: Date.now(),
+    nombre, valor, tipo, cat, quien: who, quincena: q,
+    fecha: new Date().toISOString()
+  });
+  saveData();
+  document.getElementById('inputNombre').value = '';
+  document.getElementById('inputValor').value = '';
+  renderAll();
+  showToast('✅ Registrado');
+}
+
+// ===== SAVE INGRESOS =====
+function guardarIngresos() {
+  const r = parseFloat(document.getElementById('ingRichard').value);
+  const e = parseFloat(document.getElementById('ingEsposa').value);
+  const m = getMonth();
+  if (!isNaN(r) && r > 0) m.ingresos.richard = r;
+  if (!isNaN(e) && e > 0) m.ingresos.esposa = e;
+  saveData();
+  renderAll();
+  showToast('✅ Ingresos guardados');
+}
+
+// ===== DELETE =====
+function deleteGasto(id) {
+  const m = getMonth();
+  m.gastos = m.gastos.filter(g => g.id !== id);
+  saveData();
+  renderAll();
+}
+
+function limpiarTodo() {
+  if (!confirm('¿Limpiar todos los gastos del mes?')) return;
+  getMonth().gastos = [];
+  saveData();
+  renderAll();
+  showToast('🗑️ Mes limpiado');
+}
+
+// ===== CHANGE MONTH =====
+function changeMonth() {
+  const keys = [];
+  const now = new Date();
+  for (let i = -2; i <= 1; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    keys.push(getMonthKey(d));
+  }
+  const idx = keys.indexOf(currentMonthKey);
+  currentMonthKey = keys[(idx + 1) % keys.length];
+  renderAll();
+}
+
+// ===== RENDER =====
+function renderAll() {
+  const m = getMonth();
+  const gastos = m.gastos || [];
+  const ingresos = m.ingresos || { richard: 4000000, esposa: 2900000 };
+  const totalIngreso = ingresos.richard + ingresos.esposa;
+
+  // Only count gastos and deudas as expenses
+  const totalFijos = loadFijos().reduce((s, f) => s + f.valor, 0);
+  const totalGastos = gastos.filter(g => g.tipo === 'gasto' || g.tipo === 'deuda').reduce((s, g) => s + g.valor, 0) + totalFijos;
+  const totalIngresoRegistrado = gastos.filter(g => g.tipo === 'ingreso').reduce((s, g) => s + g.valor, 0);
+  const disponible = totalIngreso - totalGastos + totalIngresoRegistrado;
+  const pct = Math.min(100, Math.round((totalGastos / totalIngreso) * 100));
+
+  // Header
+  document.getElementById('headerTitle').textContent = getMonthName(currentMonthKey);
+  document.getElementById('currentMonthBadge').textContent = MONTHS[+currentMonthKey.split('-')[1]].substring(0,3) + ' ' + currentMonthKey.split('-')[0];
+  document.getElementById('sumIngresos').textContent = fmt(totalIngreso);
+  document.getElementById('sumGastos').textContent = fmt(totalGastos);
+  const dispEl = document.getElementById('sumDisponible');
+  dispEl.textContent = fmt(Math.abs(disponible));
+  dispEl.className = 'sum-val ' + (disponible >= 0 ? 'yellow' : 'red');
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = pct + '% del ingreso';
+
+  // Ingresos inputs
+  document.getElementById('ingRichard').placeholder = `Richard: ${fmtFull(ingresos.richard)}`;
+  document.getElementById('ingEsposa').placeholder = `Esposa: ${fmtFull(ingresos.esposa)}`;
+
+  // Expense list
+  const listEl = document.getElementById('expenseList');
+  if (gastos.length === 0) {
+    listEl.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Sin registros este mes.<br>Ve a "+ Agregar" para empezar.</div>';
+  } else {
+    const sorted = [...gastos].sort((a, b) => b.id - a.id);
+    listEl.innerHTML = sorted.map(g => {
+      const c = CATS[g.cat] || CATS.otro;
+      const isGasto = g.tipo !== 'ingreso';
+      return `
+        <div class="expense-item">
+          <div class="expense-icon" style="background:${c.color}22; color:${c.color}">${c.icon}</div>
+          <div class="expense-info">
+            <div class="expense-name">${g.nombre}</div>
+            <div class="expense-meta">
+              ${c.label} · ${g.quincena === 'q1' ? 'Día 1-15' : 'Día 16-30'} ·
+              <span class="chip chip-${g.quien}">${g.quien === 'ambos' ? 'Ambos' : g.quien === 'richard' ? 'Richard' : 'Esposa'}</span>
+            </div>
+          </div>
+          <div class="expense-amount" style="color:${isGasto ? 'var(--danger)' : 'var(--good)'}">${isGasto ? '-' : '+'}${fmt(g.valor)}</div>
+          <button class="expense-delete" onclick="deleteGasto(${g.id})">×</button>
+        </div>`;
+    }).join('');
+  }
+
+  // Categories
+  const catEl = document.getElementById('catGrid');
+  const catTotals = {};
+  gastos.filter(g => g.tipo !== 'ingreso').forEach(g => {
+    catTotals[g.cat] = (catTotals[g.cat] || 0) + g.valor;
+  });
+  const catEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  if (catEntries.length === 0) {
+    catEl.innerHTML = '<div class="empty"><div class="empty-icon">📊</div>Aún sin datos.</div>';
+  } else {
+    const max = catEntries[0][1];
+    catEl.innerHTML = catEntries.map(([key, val]) => {
+      const c = CATS[key] || CATS.otro;
+      const pctCat = Math.round((val / max) * 100);
+      const pctTotal = Math.round((val / totalGastos) * 100);
+      return `
+        <div class="cat-item">
+          <div class="cat-header">
+            <div class="cat-name">${c.icon} ${c.label}</div>
+            <div class="cat-amount" style="color:${c.color}">${fmt(val)}</div>
+          </div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:${pctCat}%; background:${c.color}"></div></div>
+          <div style="font-size:10px; color:var(--muted); margin-top:4px">${pctTotal}% del total de gastos</div>
+        </div>`;
+    }).join('');
+  }
+
+  // Resumen
+  const resEl = document.getElementById('resumenContent');
+  const q1 = gastos.filter(g => g.quincena === 'q1' && g.tipo !== 'ingreso').reduce((s, g) => s + g.valor, 0);
+  const q2 = gastos.filter(g => g.quincena === 'q2' && g.tipo !== 'ingreso').reduce((s, g) => s + g.valor, 0);
+  const richGastos = gastos.filter(g => (g.quien === 'richard' || g.quien === 'ambos') && g.tipo !== 'ingreso').reduce((s, g) => s + g.valor, 0);
+  const esposaGastos = gastos.filter(g => (g.quien === 'esposa' || g.quien === 'ambos') && g.tipo !== 'ingreso').reduce((s, g) => s + g.valor, 0);
+
+  resEl.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px">
+      <div class="sum-item">
+        <div class="sum-label">Ingreso total</div>
+        <div class="sum-val green">${fmt(totalIngreso)}</div>
+        <div style="font-size:9px; color:var(--muted); margin-top:2px">Richard + Esposa</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Total gastado</div>
+        <div class="sum-val red">${fmt(totalGastos)}</div>
+        <div style="font-size:9px; color:var(--muted); margin-top:2px">${pct}% del ingreso</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Quincena 1</div>
+        <div class="sum-val" style="color:var(--blue)">${fmt(q1)}</div>
+        <div style="font-size:9px; color:var(--muted); margin-top:2px">Días 1-15</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-label">Quincena 2</div>
+        <div class="sum-val" style="color:var(--purple)">${fmt(q2)}</div>
+        <div style="font-size:9px; color:var(--muted); margin-top:2px">Días 16-30</div>
+      </div>
+    </div>
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px">
+      <div class="section-title" style="margin-bottom:10px; border:none; padding:0">Gastos por persona</div>
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px">
+        <span style="color:var(--blue)">Richard</span>
+        <span style="color:var(--blue); font-family:'Syne',sans-serif; font-weight:700">${fmt(richGastos)}</span>
+      </div>
+      <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin-bottom:8px">
+        <div style="height:100%; width:${totalGastos > 0 ? Math.round((richGastos/totalGastos)*100) : 0}%; background:var(--blue); border-radius:2px"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px">
+        <span style="color:var(--purple)">Esposa</span>
+        <span style="color:var(--purple); font-family:'Syne',sans-serif; font-weight:700">${fmt(esposaGastos)}</span>
+      </div>
+      <div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden">
+        <div style="height:100%; width:${totalGastos > 0 ? Math.round((esposaGastos/totalGastos)*100) : 0}%; background:var(--purple); border-radius:2px"></div>
+      </div>
+    </div>
+    <div style="background:${disponible >= 0 ? 'rgba(61,230,142,0.08)' : 'rgba(255,77,109,0.08)'}; border:1px solid ${disponible >= 0 ? 'rgba(61,230,142,0.25)' : 'rgba(255,77,109,0.3)'}; border-radius:12px; padding:14px; text-align:center">
+      <div style="font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:6px">Disponible este mes</div>
+      <div style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:${disponible >= 0 ? 'var(--good)' : 'var(--danger)'}">${fmt(Math.abs(disponible))}</div>
+      <div style="font-size:10px; color:var(--muted); margin-top:4px">${disponible >= 0 ? 'Para deudas o ahorro' : 'DÉFICIT — revisar gastos'}</div>
+    </div>`;
+}
+
+// ===== PANEL NAV =====
+function showPanel(id, tabEl) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (tabEl) tabEl.classList.add('active');
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== GASTOS FIJOS =====
+function loadFijos() {
+  try { return JSON.parse(localStorage.getItem("mestra_fijos") || "[]"); } catch(e) { return []; }
+}
+function saveFijos(fijos) {
+  try { localStorage.setItem("mestra_fijos", JSON.stringify(fijos)); } catch(e) {}
+}
+function agregarFijo() {
+  const nombre = document.getElementById("fijNombre").value.trim();
+  const valor = parseFloat(document.getElementById("fijValor").value);
+  const cat = document.getElementById("fijCategoria").value;
+  const quincena = document.getElementById("fijQuincena").value;
+  const quien = document.getElementById("fijQuien").value;
+  if (!nombre || isNaN(valor) || valor <= 0) { showToast("⚠️ Completa todos los campos"); return; }
+  const fijos = loadFijos();
+  fijos.push({ id: Date.now(), nombre, valor, cat, quincena, quien });
+  saveFijos(fijos);
+  document.getElementById("fijNombre").value = "";
+  document.getElementById("fijValor").value = "";
+  renderFijos();
+  renderAll();
+  showToast("✅ Gasto fijo guardado");
+}
+function deleteFijo(id) {
+  const fijos = loadFijos().filter(f => f.id !== id);
+  saveFijos(fijos);
+  renderFijos();
+  renderAll();
+}
+function getTotalFijos() {
+  return loadFijos().reduce((s, f) => s + f.valor, 0);
+}
+function renderFijos() {
+  const fijos = loadFijos();
+  const el = document.getElementById("fijosList");
+  const labelEl = document.getElementById("totalFijosLabel");
+  if (!el || !labelEl) return;
+  const total = fijos.reduce((s, f) => s + f.valor, 0);
+  labelEl.textContent = fmt(total);
+  if (fijos.length === 0) {
+    el.innerHTML = "<div class='empty'><div class='empty-icon'>📌</div>Sin gastos fijos aún.<br>Agrega arriendo, servicios,<br>cuotas de deudas, etc.</div>";
+    return;
+  }
+  el.innerHTML = fijos.map(f => {
+    const c = CATS[f.cat] || CATS.otro;
+    const qLabel = f.quincena === "q1" ? "Días 1-15" : f.quincena === "q2" ? "Días 16-30" : "Ambas quincenas";
+    return `<div class="expense-item" style="margin-bottom:6px">
+      <div class="expense-icon" style="background:${c.color}22; color:${c.color}">${c.icon}</div>
+      <div class="expense-info">
+        <div class="expense-name">${f.nombre}</div>
+        <div class="expense-meta">${c.label} · ${qLabel} · <span class="chip chip-${f.quien}">${f.quien === "ambos" ? "Ambos" : f.quien === "richard" ? "Richard" : "Esposa"}</span></div>
+      </div>
+      <div class="expense-amount" style="color:var(--danger)">-${fmt(f.valor)}</div>
+      <button class="expense-delete" onclick="deleteFijo(${f.id})">×</button>
+    </div>`;
+  }).join("");
+}
+
+// ===== POR PAGAR =====
+let ppWho = 'richard';
+
+function setPpWho(w) {
+  ppWho = w;
+  ['richard','esposa','ambos'].forEach(id => {
+    const el = document.getElementById('pp-' + id);
+    if (el) el.className = 'who-btn' + (id === w ? ` active-${id}` : '');
+  });
+  const splitWrap = document.getElementById('ppSplitWrap');
+  if (splitWrap) splitWrap.style.display = w === 'ambos' ? 'block' : 'none';
+}
+
+function loadPP() {
+  try { return JSON.parse(localStorage.getItem('mestra_pp') || '[]'); } catch(e) { return []; }
+}
+function savePP(list) {
+  try { localStorage.setItem('mestra_pp', JSON.stringify(list)); } catch(e) {}
+}
+
+function agregarPorPagar() {
+  const nombre = document.getElementById('ppNombre').value.trim();
+  const valorRaw = document.getElementById('ppValor').value;
+  const valor = valorRaw ? parseFloat(valorRaw) : null;
+  const cat = document.getElementById('ppCategoria').value;
+  const fechaLimite = document.getElementById('ppFechaLimite').value;
+  const splitR = document.getElementById('ppSplitRichard').value;
+  const splitE = document.getElementById('ppSplitEsposa').value;
+
+  if (!nombre) { showToast('⚠️ Escribe qué hay que pagar'); return; }
+
+  const item = {
+    id: Date.now(), nombre, valor, cat, quien: ppWho,
+    fechaLimite: fechaLimite || null,
+    splitRichard: splitR ? parseFloat(splitR) : null,
+    splitEsposa: splitE ? parseFloat(splitE) : null,
+    pagado: false, fechaPago: null
+  };
+
+  const list = loadPP();
+  list.push(item);
+  savePP(list);
+
+  document.getElementById('ppNombre').value = '';
+  document.getElementById('ppValor').value = '';
+  document.getElementById('ppSplitRichard').value = '';
+  document.getElementById('ppSplitEsposa').value = '';
+  document.getElementById('ppFechaLimite').value = '';
+
+  renderPP();
+  showToast('✅ Agregado a por pagar');
+}
+
+function togglePagado(id) {
+  const list = loadPP();
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+  item.pagado = !item.pagado;
+  item.fechaPago = item.pagado ? new Date().toISOString() : null;
+  savePP(list);
+  renderPP();
+  showToast(item.pagado ? '✅ Marcado como pagado' : '↩️ Marcado como pendiente');
+}
+
+function deletePP(id) {
+  savePP(loadPP().filter(i => i.id !== id));
+  renderPP();
+}
+
+function renderPP() {
+  const list = loadPP();
+  const pendientes = list.filter(i => !i.pagado);
+  const pagados = list.filter(i => i.pagado);
+
+  const totalPend = pendientes.reduce((s, i) => s + (i.valor || 0), 0);
+  const totalPag = pagados.reduce((s, i) => s + (i.valor || 0), 0);
+
+  const ppTP = document.getElementById('ppTotalPend');
+  const ppTPg = document.getElementById('ppTotalPag');
+  const ppC = document.getElementById('ppCount');
+  if (ppTP) ppTP.textContent = fmt(totalPend);
+  if (ppTPg) ppTPg.textContent = fmt(totalPag);
+  if (ppC) ppC.textContent = list.length;
+
+  function renderItem(item) {
+    const c = CATS[item.cat] || CATS.otro;
+    const today = new Date().toISOString().split('T')[0];
+    const vencido = item.fechaLimite && item.fechaLimite < today && !item.pagado;
+
+    let splitInfo = '';
+    if (item.quien === 'ambos') {
+      if (item.splitRichard || item.splitEsposa) {
+        const r = item.splitRichard ? fmt(item.splitRichard) : '?';
+        const e = item.splitEsposa ? fmt(item.splitEsposa) : '?';
+        splitInfo = `<span style="color:var(--blue)">R: ${r}</span> · <span style="color:var(--purple)">E: ${e}</span>`;
+      } else {
+        splitInfo = '<span style="color:var(--muted)">División sin definir</span>';
+      }
+    }
+
+    let fechaInfo = '';
+    if (item.fechaLimite) {
+      fechaInfo = `<span style="color:${vencido ? 'var(--danger)' : 'var(--muted)'}">📅 ${item.fechaLimite}${vencido ? ' ⚠️ VENCIDO' : ''}</span>`;
+    }
+
+    return `<div class="expense-item" style="margin-bottom:8px; ${item.pagado ? 'opacity:0.6' : ''}; ${vencido ? 'border-color:rgba(255,77,109,0.4)' : ''}">
+      <div style="margin-right:6px">
+        <div onclick="togglePagado(${item.id})" style="width:22px; height:22px; border-radius:50%; border:2px solid ${item.pagado ? 'var(--good)' : 'var(--muted)'}; background:${item.pagado ? 'var(--good)' : 'transparent'}; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:12px; flex-shrink:0">
+          ${item.pagado ? '✓' : ''}
+        </div>
+      </div>
+      <div class="expense-icon" style="background:${c.color}22; color:${c.color}">${c.icon}</div>
+      <div class="expense-info">
+        <div class="expense-name" style="${item.pagado ? 'text-decoration:line-through' : ''}">${item.nombre}</div>
+        <div class="expense-meta">
+          <span class="chip chip-${item.quien}">${item.quien === 'ambos' ? 'Ambos' : item.quien === 'richard' ? 'Richard' : 'Esposa'}</span>
+          ${splitInfo ? ' · ' + splitInfo : ''}
+          ${fechaInfo ? '<br>' + fechaInfo : ''}
+        </div>
+      </div>
+      <div style="text-align:right; flex-shrink:0">
+        <div class="expense-amount" style="color:${item.pagado ? 'var(--good)' : 'var(--danger)'}">
+          ${item.valor ? fmt(item.valor) : '—'}
+        </div>
+        <button class="expense-delete" onclick="deletePP(${item.id})">×</button>
+      </div>
+    </div>`;
+  }
+
+  const pendEl = document.getElementById('ppListPend');
+  const pagEl = document.getElementById('ppListPag');
+
+  if (pendEl) {
+    pendEl.innerHTML = pendientes.length === 0
+      ? '<div class="empty" style="padding:20px 0"><div class="empty-icon">🎉</div>¡Todo pagado!</div>'
+      : pendientes.map(renderItem).join('');
+  }
+  if (pagEl) {
+    pagEl.innerHTML = pagados.length === 0
+      ? '<div style="font-size:11px; color:var(--muted); padding:10px 0 20px">Aún sin pagos registrados.</div>'
+      : pagados.map(renderItem).join('');
+  }
+}
+
+
+// ===== GOOGLE SHEETS INTEGRATION =====
+const CLIENT_ID = '250556811452-71rtq5bqc0qu943acdabqnifohee5dif.apps.googleusercontent.com';
+const SHEET_ID  = '1-vgLjK43GT-TUtRhSv9oKs0My3KKCtwR7v_KRpNCjH4';
+const SCOPES    = 'https://www.googleapis.com/auth/spreadsheets';
+const SHEETS    = ['Gastos','Fijos','PorPagar','Ingresos'];
+
+let tokenClient = null;
+let gapiReady = false;
+let gsiReady  = false;
+let accessToken = null;
+
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('syncDot');
+  const status = document.getElementById('syncStatus');
+  const btn = document.getElementById('syncBtn');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + state;
+  status.textContent = msg;
+  if (state === 'synced') btn.textContent = 'Sincronizar';
+  else if (state === 'syncing') btn.textContent = '...';
+  else btn.textContent = 'Conectar';
+}
+
+// Load GAPI
+function gapiLoaded() {
+  gapi.load('client', async () => {
+    await gapi.client.init({ discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'] });
+    gapiReady = true;
+    maybeInit();
+  });
+}
+
+// Load GSI
+function gsiLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { setSyncStatus('error', 'Error de autenticación'); return; }
+      accessToken = resp.access_token;
+      localStorage.setItem('gtoken', accessToken);
+      setSyncStatus('syncing', 'Preparando hojas...');
+      await ensureSheets();
+      await pullFromSheets();
+      setSyncStatus('synced', 'Conectado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}));
+      document.getElementById('syncBtn').textContent = 'Sincronizar';
+    }
+  });
+  gsiReady = true;
+  maybeInit();
+}
+
+function maybeInit() {
+  if (!gapiReady || !gsiReady) return;
+  const saved = localStorage.getItem('gtoken');
+  if (saved) {
+    accessToken = saved;
+    gapi.client.setToken({ access_token: saved });
+    setSyncStatus('synced', 'Conectado');
+    document.getElementById('syncBtn').textContent = 'Sincronizar';
+  }
+}
+
+function handleAuthClick() {
+  if (accessToken) {
+    setSyncStatus('syncing', 'Sincronizando...');
+    pushToSheets().then(() => {
+      setSyncStatus('synced', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}));
+    }).catch(() => setSyncStatus('error', 'Error al sincronizar'));
+    return;
+  }
+  if (!tokenClient) { setSyncStatus('error', 'Google no cargó aún'); return; }
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+// Ensure all sheets exist
+async function ensureSheets() {
+  try {
+    gapi.client.setToken({ access_token: accessToken });
+    const res = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const existing = res.result.sheets.map(s => s.properties.title);
+    const toCreate = SHEETS.filter(s => !existing.includes(s));
+    if (toCreate.length === 0) return;
+    await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      resource: { requests: toCreate.map(title => ({ addSheet: { properties: { title } } })) }
+    });
+    // Add headers
+    const headers = {
+      Gastos:    [['ID','Nombre','Valor','Tipo','Categoria','Quien','Quincena','Fecha']],
+      Fijos:     [['ID','Nombre','Valor','Categoria','Quincena','Quien']],
+      PorPagar:  [['ID','Nombre','Valor','Categoria','Quien','FechaLimite','SplitRichard','SplitEsposa','Pagado','FechaPago']],
+      Ingresos:  [['Mes','Richard','Esposa']]
+    };
+    for (const sh of toCreate) {
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID, range: sh + '!A1',
+        valueInputOption: 'RAW',
+        resource: { values: headers[sh] }
+      });
+    }
+  } catch(e) { console.error('ensureSheets', e); }
+}
+
+// Push all local data to Sheets
+async function pushToSheets() {
+  gapi.client.setToken({ access_token: accessToken });
+  const m = getMonth();
+  const gastos = m.gastos || [];
+  const fijos = loadFijos();
+  const pp = loadPP();
+  const ingresos = m.ingresos || { richard: 4000000, esposa: 2900000 };
+
+  const gastosRows = gastos.map(g => [g.id, g.nombre, g.valor, g.tipo, g.cat, g.quien, g.quincena, g.fecha]);
+  const fijosRows  = fijos.map(f => [f.id, f.nombre, f.valor, f.cat, f.quincena, f.quien]);
+  const ppRows     = pp.map(p => [p.id, p.nombre, p.valor||'', p.cat, p.quien, p.fechaLimite||'', p.splitRichard||'', p.splitEsposa||'', p.pagado?'SI':'NO', p.fechaPago||'']);
+  const ingRow     = [[currentMonthKey, ingresos.richard, ingresos.esposa]];
+
+  const writes = [
+    { range: 'Gastos!A2', values: gastosRows.length ? gastosRows : [['']] },
+    { range: 'Fijos!A2',  values: fijosRows.length  ? fijosRows  : [['']] },
+    { range: 'PorPagar!A2', values: ppRows.length   ? ppRows     : [['']] },
+    { range: 'Ingresos!A2', values: ingRow }
+  ];
+
+  // Clear first then write
+  for (const w of writes) {
+    await gapi.client.sheets.spreadsheets.values.clear({ spreadsheetId: SHEET_ID, range: w.range.split('!')[0] + '!A2:Z' });
+  }
+  await gapi.client.sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SHEET_ID,
+    resource: { valueInputOption: 'RAW', data: writes }
+  });
+}
+
+// Pull data from Sheets into localStorage
+async function pullFromSheets() {
+  gapi.client.setToken({ access_token: accessToken });
+  try {
+    const res = await gapi.client.sheets.spreadsheets.values.batchGet({
+      spreadsheetId: SHEET_ID,
+      ranges: ['Gastos!A2:H', 'Fijos!A2:F', 'PorPagar!A2:J', 'Ingresos!A2:C']
+    });
+    const [gRows, fRows, pRows, iRows] = res.result.valueRanges.map(r => r.values || []);
+
+    // Gastos
+    const m = getMonth();
+    if (gRows.length && gRows[0][0]) {
+      m.gastos = gRows.map(r => ({
+        id: +r[0], nombre: r[1], valor: +r[2], tipo: r[3], cat: r[4], quien: r[5], quincena: r[6], fecha: r[7]
+      }));
+    }
+
+    // Fijos
+    if (fRows.length && fRows[0][0]) {
+      const fijos = fRows.map(r => ({ id: +r[0], nombre: r[1], valor: +r[2], cat: r[3], quincena: r[4], quien: r[5] }));
+      localStorage.setItem('mestra_fijos', JSON.stringify(fijos));
+    }
+
+    // PorPagar
+    if (pRows.length && pRows[0][0]) {
+      const pp = pRows.map(r => ({
+        id: +r[0], nombre: r[1], valor: r[2]?+r[2]:null, cat: r[3], quien: r[4],
+        fechaLimite: r[5]||null, splitRichard: r[6]?+r[6]:null, splitEsposa: r[7]?+r[7]:null,
+        pagado: r[8]==='SI', fechaPago: r[9]||null
+      }));
+      localStorage.setItem('mestra_pp', JSON.stringify(pp));
+    }
+
+    // Ingresos
+    if (iRows.length && iRows[0][0]) {
+      m.ingresos = { richard: +iRows[0][1], esposa: +iRows[0][2] };
+    }
+
+    saveData();
+    renderFijos();
+    renderPP();
+    renderAll();
+  } catch(e) { console.error('pullFromSheets', e); }
+}
+
+// Auto-push after any save
+const _origSaveData = saveData;
+window.saveData = function() { _origSaveData(); if (accessToken) { pushToSheets().catch(()=>{}); } };
+
+// Load Google APIs when scripts are ready
+window.addEventListener('load', () => {
+  const waitGapi = setInterval(() => {
+    if (typeof gapi !== 'undefined') { clearInterval(waitGapi); gapiLoaded(); }
+  }, 200);
+  const waitGsi = setInterval(() => {
+    if (typeof google !== 'undefined' && google.accounts) { clearInterval(waitGsi); gsiLoaded(); }
+  }, 200);
+});
+
+// ===== INIT =====
+renderFijos();
+renderPP();
+renderAll();
+</script>
+</body>
+</html>
