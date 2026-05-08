@@ -1056,12 +1056,11 @@ function showToast(msg) {
 function loadFijos() {
   try { return JSON.parse(localStorage.getItem("mestra_fijos") || "[]"); } catch(e) { return []; }
 }
-function saveFijos(fijos) {
-  try { localStorage.setItem("mestra_fijos", JSON.stringify(fijos)); } catch(e) {}
-}
+function saveFijos(fijos) { _fijos = fijos; }
+
 function agregarFijo() {
   const nombre = document.getElementById("fijNombre").value.trim();
-  const valor = parseFloat(document.getElementById("fijValor").value);
+  const valor = parseMoney(document.getElementById("fijValor"));
   const cat = document.getElementById("fijCategoria").value;
   const quincena = document.getElementById("fijQuincena").value;
   const quien = document.getElementById("fijQuien").value;
@@ -1073,14 +1072,60 @@ function agregarFijo() {
   document.getElementById("fijValor").value = "";
   renderFijos();
   renderAll();
-  showToast("✅ Gasto fijo guardado");
+  setSyncStatus('syncing', 'Guardando...');
+  pushFijosToSheets().then(() => {
+    setSyncStatus('synced', 'Guardado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
+    showToast("✅ Gasto fijo guardado");
+  }).catch(() => setSyncStatus('error', 'Error al guardar'));
 }
+
 function deleteFijo(id) {
   const fijos = loadFijos().filter(f => f.id !== id);
   saveFijos(fijos);
   renderFijos();
   renderAll();
+  setSyncStatus('syncing', 'Guardando...');
+  pushFijosToSheets().then(() => {
+    setSyncStatus('synced', 'Guardado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
+  }).catch(() => setSyncStatus('error', 'Error al guardar'));
 }
+
+async function pushFijosToSheets() {
+  const fijos = loadFijos();
+  const rows = [['ID','Nombre','Valor','Categoria','Quincena','Quien'],
+    ...fijos.map(f => [f.id, f.nombre, f.valor, f.cat, f.quincena, f.quien])];
+  await appsScriptPost('Fijos', rows);
+}
+
+function generarPorPagarDesdeFijos() {
+  const fijos = loadFijos();
+  if (fijos.length === 0) return;
+  const pp = loadPP();
+  const mesActual = currentMonthKey;
+  let agregados = 0;
+  fijos.forEach(f => {
+    const yaExiste = pp.some(p => p.fijo_id === f.id && p.mes === mesActual);
+    if (!yaExiste) {
+      pp.push({
+        id: Date.now() + Math.random(),
+        nombre: f.nombre, valor: f.valor, cat: f.cat, quien: f.quien,
+        fechaLimite: null, splitRichard: null, splitEsposa: null,
+        pagado: false, fechaPago: null,
+        fijo_id: f.id, mes: mesActual
+      });
+      agregados++;
+    }
+  });
+  if (agregados > 0) {
+    savePP(pp);
+    renderPP();
+    const ppRows = [['ID','Nombre','Valor','Categoria','Quien','FechaLimite','SplitRichard','SplitEsposa','Pagado','FechaPago','FijoID','Mes'],
+      ...pp.map(p => [p.id, p.nombre, p.valor||'', p.cat, p.quien, p.fechaLimite||'', p.splitRichard||'', p.splitEsposa||'', p.pagado?'SI':'NO', p.fechaPago||'', p.fijo_id||'', p.mes||''])];
+    appsScriptPost('PorPagar', ppRows).catch(() => {});
+    showToast("📌 " + agregados + " fijo(s) agregados a Por Pagar");
+  }
+}
+
 function getTotalFijos() {
   return loadFijos().reduce((s, f) => s + f.valor, 0);
 }
@@ -1357,7 +1402,8 @@ async function pullFromSheets() {
       _pp = pRes.rows.slice(1).filter(r => r[0] && String(r[0]).trim() !== '').map(r => ({
         id: +r[0], nombre: r[1], valor: r[2]?+r[2]:null, cat: r[3], quien: r[4],
         fechaLimite: r[5]||null, splitRichard: r[6]?+r[6]:null, splitEsposa: r[7]?+r[7]:null,
-        pagado: r[8]==='SI', fechaPago: r[9]||null
+        pagado: r[8]==='SI', fechaPago: r[9]||null,
+        fijo_id: r[10]||null, mes: r[11]||null
       }));
     }
 
@@ -1368,6 +1414,7 @@ async function pullFromSheets() {
     renderFijos();
     renderPP();
     renderAll();
+    generarPorPagarDesdeFijos();
     setSyncStatus('synced', 'Actualizado · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}));
   } catch(e) {
     console.error('pullFromSheets error:', e);
@@ -1403,85 +1450,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadFijos() {
   try { return JSON.parse(localStorage.getItem("mestra_fijos") || "[]"); } catch(e) { return []; }
 }
-function saveFijos(fijos) {
-  try { localStorage.setItem("mestra_fijos", JSON.stringify(fijos)); } catch(e) {}
-}
-function agregarFijo() {
-  const nombre = document.getElementById("fijNombre").value.trim();
-  const valor = parseFloat(document.getElementById("fijValor").value);
-  const cat = document.getElementById("fijCategoria").value;
-  const quincena = document.getElementById("fijQuincena").value;
-  const quien = document.getElementById("fijQuien").value;
-  if (!nombre || valor <= 0) { showToast("⚠️ Completa todos los campos"); return; }
-  const fijos = loadFijos();
-  fijos.push({ id: Date.now(), nombre, valor, cat, quincena, quien });
-  saveFijos(fijos);
-  document.getElementById("fijNombre").value = "";
-  document.getElementById("fijValor").value = "";
-  renderFijos();
-  renderAll();
-  showToast("✅ Gasto fijo guardado");
-}
-function deleteFijo(id) {
-  const fijos = loadFijos().filter(f => f.id !== id);
-  saveFijos(fijos);
-  renderFijos();
-  renderAll();
-}
-function getTotalFijos() {
-  return loadFijos().reduce((s, f) => s + f.valor, 0);
-}
-function renderFijos() {
-  const fijos = loadFijos();
-  const el = document.getElementById("fijosList");
-  const labelEl = document.getElementById("totalFijosLabel");
-  if (!el || !labelEl) return;
-  const total = fijos.reduce((s, f) => s + f.valor, 0);
-  labelEl.textContent = fmt(total);
-  if (fijos.length === 0) {
-    el.innerHTML = "<div class='empty'><div class='empty-icon'>📌</div>Sin gastos fijos aún.<br>Agrega arriendo, servicios,<br>cuotas de deudas, etc.</div>";
-    return;
-  }
-  el.innerHTML = fijos.map(f => {
-    const c = CATS[f.cat] || CATS.otro;
-    const qLabel = f.quincena === "q1" ? "Días 1-15" : f.quincena === "q2" ? "Días 16-30" : "Ambas quincenas";
-    return `<div class="expense-item" style="margin-bottom:6px">
-      <div class="expense-icon" style="background:${c.color}22; color:${c.color}">${c.icon}</div>
-      <div class="expense-info">
-        <div class="expense-name">${f.nombre}</div>
-        <div class="expense-meta">${c.label} · ${qLabel} · <span class="chip chip-${f.quien}">${f.quien === "ambos" ? "Ambos" : f.quien === "richard" ? "Richard" : "Esposa"}</span></div>
-      </div>
-      <div class="expense-amount" style="color:var(--danger)">-${fmt(f.valor)}</div>
-      <button class="expense-delete" onclick="deleteFijo(${f.id})">×</button>
-    </div>`;
-  }).join("");
-}
-
-// ===== FORMATO DE DINERO =====
-function formatMoney(input) {
-  const pos = input.selectionStart;
-  const prev = input.value;
-  let raw = prev.replace(/[^0-9]/g, '');
-  if (!raw) { input.value = ''; return; }
-  const num = parseInt(raw, 10);
-  const formatted = num.toLocaleString('es-CO');
-  input.value = formatted;
-  // Restore cursor position adjusted for added separators
-  const diff = formatted.length - prev.length;
-  try { input.setSelectionRange(pos + diff, pos + diff); } catch(e) {}
-}
-
-function parseMoney(input) {
-  if (!input) return 0;
-  return parseInt(input.value.replace(/[^0-9]/g, ''), 10) || 0;
-}
-
-function moneyInput(id) {
-  const el = document.getElementById(id);
-  if (!el) return 0;
-  return parseMoney(el);
-}
-
 // ===== INIT =====
 renderFijos();
 renderPP();
