@@ -781,6 +781,25 @@
 <div class="toast" id="toast"></div>
 
 <script>
+
+// ===== FORMATO DE DINERO =====
+function formatMoney(input) {
+  const prev = input.value;
+  const pos = input.selectionStart;
+  let raw = prev.replace(/[^0-9]/g, '');
+  if (!raw) { input.value = ''; return; }
+  const num = parseInt(raw, 10);
+  const formatted = num.toLocaleString('es-CO');
+  input.value = formatted;
+  const diff = formatted.length - prev.length;
+  try { input.setSelectionRange(pos + diff, pos + diff); } catch(e) {}
+}
+
+function parseMoney(input) {
+  if (!input) return 0;
+  return parseInt(String(input.value || '').replace(/[^0-9]/g, ''), 10) || 0;
+}
+
 // ===== STATE =====
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let currentMonthKey = getMonthKey(new Date());
@@ -1053,11 +1072,6 @@ function showToast(msg) {
 }
 
 // ===== GASTOS FIJOS =====
-function loadFijos() {
-  try { return JSON.parse(localStorage.getItem("mestra_fijos") || "[]"); } catch(e) { return []; }
-}
-function saveFijos(fijos) { _fijos = fijos; }
-
 function agregarFijo() {
   const nombre = document.getElementById("fijNombre").value.trim();
   const valor = parseMoney(document.getElementById("fijValor"));
@@ -1169,6 +1183,10 @@ function setPpWho(w) {
 }
 
 // PorPagar en memoria
+let _fijos = [];
+function loadFijos() { return _fijos; }
+function saveFijos(fijos) { _fijos = fijos; }
+
 let _pp = [];
 function loadPP() { return _pp; }
 function savePP(list) { _pp = list; }
@@ -1446,10 +1464,6 @@ document.addEventListener('DOMContentLoaded', () => {
   pullFromSheets();
 });
 
-// ===== GASTOS FIJOS =====
-function loadFijos() {
-  try { return JSON.parse(localStorage.getItem("mestra_fijos") || "[]"); } catch(e) { return []; }
-}
 // ===== INIT =====
 renderFijos();
 renderPP();
